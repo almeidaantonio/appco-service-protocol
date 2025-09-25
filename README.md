@@ -20,51 +20,117 @@ Import the namespace in your service or controller:
 `using Appco.ServiceProtocol;`
 
 ## Exemples
+
+### Service class
 ```C#
-	// Example 1: Internal error response without content
-	var internalErrorResponse = InternalError("An unexpected error occurred.");
-	// internalErrorResponse.Status is StatusInternalError, Message = "An unexpected error occurred."
+/// Represents a simple resource with a name property.
+/// Used as an example entity for service operations.
+public class ExempleResource
+{
+    public string Name { get; set; } = string.Empty;
+}
 
-	// Example 2: Internal error response with content
-	var internalErrorWithContent = InternalError("Database failure.", "Error details here");
-	// internalErrorWithContent.Status is StatusInternalError, Message = "Database failure."
-	// internalErrorWithContent.Content = "Error details here"
+/// Example service demonstrating basic resource management operations.
+/// This class provides sample implementations for adding, retrieving, and checking resources.
+public class ExempleService : BaseService
+{
+    // In-memory list to store example resources.
+    private readonly List<ExempleResource> _resources = [];
 
-	// Example 3: Not found response
-	var notFoundResponse = NotFound("User not found.");
-	// notFoundResponse.Status is StatusNotFound, Message = "User not found."
+    /// Adds a new resource to the service.
+    /// Demonstrates validation and creation response.
+    public ServiceResponse<int> AddResource(ExempleResource resource)
+    {
+        // Example of input validation: checks if the resource name is empty.
+        if (string.IsNullOrWhiteSpace(resource.Name))
+            return InvalidSchema<int>("Empty name.");
 
-	// Example 4: Not found response with content
-	var notFoundWithContent = NotFound("Order not found.", 12345);
-	// notFoundWithContent.Status is StatusNotFound, Message = "Order not found."
-	// notFoundWithContent.Content = 12345
+        _resources.Add(resource);
 
-	// Example 5: Success response (OK)
-	var okResponse = Ok();
-	// okResponse.Status is StatusOk, Message = "Ok."
+        // Returns a created response with the total number of resources.
+        return Created("Resource added successfully.", _resources.Count);
+    }
 
-	// Example 6: Success response (OK) with custom message
-	var okWithMessage = Ok("Operation completed successfully.");
-	// okWithMessage.Status is StatusOk, Message = "Operation completed successfully."
+    /// Retrieves a resource by its index.
+    /// Demonstrates not found and success responses.
+    public ServiceResponse<ExempleResource> GetById(int id)
+    {
+        // Example of bounds checking: returns not found if the index is out of range.
+        if (id > _resources.Count)
+            return NotFound<ExempleResource>("Id not found.");
 
-	// Example 7: Success response (OK) with content
-	var okWithContent = Ok("Data loaded.", "Sample data");
-	// okWithContent.Status is StatusOk, Message = "Data loaded."
-	// okWithContent.Content = "Sample data"
+        // Returns the found resource.
+        return Ok("Resource found successfully.", _resources[id]);
+    }
 
-	// Example 8: Created response
-	var createdResponse = Created("Resource created.");
-	// createdResponse.Status is StatusCreated, Message = "Resource created."
+    /// Checks if a resource exists by its index.
+    /// Demonstrates not found and success responses without returning the resource.
+    public ServiceResponse IdExists(int id)
+    {
+        // Example of existence check: returns not found if the index is out of range.
+        if (id > _resources.Count)
+            return NotFound("Id not found.");
 
-	// Example 9: Updated response with content
-	var updatedWithContent = Updated("Resource updated.", "Updated value");
-	// updatedWithContent.Status is StatusUpdated, Message = "Resource updated."
-	// updatedWithContent.Content = "Updated value"
+        // Returns a success response if the resource exists.
+        return Ok($"Resource number {id} found");
+    }
 
-	// Example 10: Deleted response
-	var deletedResponse = Deleted("Resource deleted.");
-	// deletedResponse.Status is StatusDeleted, Message = "Resource deleted."
+    public ServiceResponse Update(int id, ExempleResource resource)
+    {
+        _resources[id] = resource;
+        return Updated("Resource updated successfully.");
+    }
+}
 ```
+
+### Controller adapter (based on `Microsoft.AspNetCore.Mvc`)
+```c#
+
+[ApiController]
+public class ExempleController(ExempleService service) : ControllerBase
+{
+    private readonly ExempleService _service = service;
+
+	[HttpPost("/exemple")]
+	public ObjectResult AddResource([FromBody] ExempleResource resource) =>
+		Adapt(_service.AddResource(resource));
+
+	[HttpGet("/exemple/{id}/exists")]
+	public ObjectResult IdExists(int id) => Adapt(_service.IdExists(id));
+
+	[HttpGet("/exemple/{id}")]
+	public ObjectResult GetById(int id) => Adapt(_service.GetById(id));
+
+	[HttpPut("/exemple/{id}")]
+	public ObjectResult Update(int id, [FromBody] ExempleResource resource)
+	{
+		var checkIdExistsResponse = _service.IdExists(id);
+
+		if (!checkIdExistsResponse.Status.Success())
+			return Adapt(checkIdExistsResponse);
+
+		return Adapt(_service.Update(id, resource));
+	}
+
+	public ObjectResult Adapt<TContent>(ServiceResponse<TContent> serviceResponse)
+	{
+		return StatusCode(serviceResponse.Status.HttpStatusCode(), new
+		{
+			StatusMessage = serviceResponse.Status.Message,
+			serviceResponse.Content,
+		});
+	}
+
+	public ObjectResult Adapt(ServiceResponse serviceResponse)
+	{
+		return StatusCode(serviceResponse.Status.HttpStatusCode(), new
+		{
+			StatusMessage = serviceResponse.Status.Message,
+		});
+	}
+}
+```
+
 
 ## License
 

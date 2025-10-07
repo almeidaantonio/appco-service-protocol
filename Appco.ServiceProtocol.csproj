@@ -10,6 +10,7 @@
     <PackageIcon>logo-preto.png</PackageIcon>
     <PackageReadmeFile>README.md</PackageReadmeFile>
     <RepositoryUrl>https://github.com/almeidaantonio/appco-service-protocol</RepositoryUrl>
+    <Version>1.0.2</Version>
   </PropertyGroup>
 
   <ItemGroup>

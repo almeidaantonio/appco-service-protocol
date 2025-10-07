@@ -41,6 +41,21 @@ public class BaseService
     };
 
     /// <summary>
+    /// Builds a <see cref="ServiceResponse{TContent}"/> with the specified <see cref="Status"/> and content.
+    /// </summary>
+    /// <typeparam name="TContent">The type of the content.</typeparam>
+    /// <param name="status">The status to include in the response.</param>
+    /// <param name="content">The content to include in the response.</param>
+    /// <param name="count">Pagination count.</param>
+    /// <returns>A <see cref="ServiceResponse{TContent}"/> containing the given status and content.</returns>
+    private static ServiceResponse<TContent> BuildResponse<TContent>(Status status, TContent content, int count) => new()
+    {
+        Status = status,
+        Content = content,
+        Count = count,
+    };
+
+    /// <summary>
     /// Creates a <see cref="ServiceResponse"/> representing an internal error.
     /// </summary>
     /// <param name="message">The error message.</param>
@@ -147,6 +162,17 @@ public class BaseService
     /// <returns>A <see cref="ServiceResponse{TContent}"/> with OK status, message, and content.</returns>
     public static ServiceResponse<TContent> Ok<TContent>(string message, TContent content) =>
         BuildResponse(new StatusOk { Message = message }, content);
+
+    /// <summary>
+    /// Creates a <see cref="ServiceResponse{TContent}"/> representing a successful operation with a custom message and content.
+    /// </summary>
+    /// <typeparam name="TContent">The type of the content.</typeparam>
+    /// <param name="message">The success message.</param>
+    /// <param name="content">The content to include in the response.</param>
+    /// <param name="count">Content pagination count.</param>
+    /// <returns>A <see cref="ServiceResponse{TContent}"/> with OK status, message, and content.</returns>
+    public static ServiceResponse<TContent> Ok<TContent>(string message, TContent content, int count) =>
+        BuildResponse(new StatusOk { Message = message }, content, count);
 
     /// <summary>
     /// Creates a <see cref="ServiceResponse"/> representing a resource creation operation.

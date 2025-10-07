@@ -8,4 +8,5 @@ public class ServiceResponse
 public class ServiceResponse<TContent> : ServiceResponse
 {
     public TContent? Content { get; set; }
+    public int Count { get; set; }
 }
